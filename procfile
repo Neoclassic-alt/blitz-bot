@@ -1,1 +1,1 @@
-python "orders_bot.py"
+web: python "orders_bot.py"
