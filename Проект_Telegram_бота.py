@@ -2,6 +2,7 @@ import config
 import telebot
 from telebot import apihelper
 import sqlite3
+import re
 
 token = config.TOKEN
 
@@ -136,53 +137,56 @@ def go_to_menu(message):
 # ввод значений
 @bot.message_handler(regexp=r'[\d\s,\*]+')
 def string_wrapper(message):
-    temp_str = []
-    cursor.execute("SELECT state FROM users WHERE user_id = ?", (message.chat.id,))
-    state = cursor.fetchall()[0][0]
-    list_orders = ""
-    if state == "order":
-        temp_str = message.text.split(",")
-        temp_str = list(map(lambda x: x.replace(' ', '').split('*'), temp_str))
-        set_state('null', message)
-        temp_str = to_order_list(temp_str)
-        count = 0
-        for i in temp_str:
-            count = count + i
-        bot.send_message(message.chat.id, case_form(count))
+    if re.match(r'[\d\s,\*]+', message.text)[0] == message.text:
+        temp_str = []
+        cursor.execute("SELECT state FROM users WHERE user_id = ?", (message.chat.id,))
+        state = cursor.fetchall()[0][0]
+        list_orders = ""
+        if state == "order":
+            temp_str = message.text.split(",")
+            temp_str = list(map(lambda x: x.replace(' ', '').split('*'), temp_str))
+            set_state('null', message)
+            temp_str = to_order_list(temp_str)
+            count = 0
+            for i in temp_str:
+                count = count + i
+            bot.send_message(message.chat.id, case_form(count))
 
-        list_orders = select_list_orders(message)
-        list_orders = str([x+y for x,y in zip(temp_str, list_orders)]).replace('[','').replace(']','')
-        update_orders(list_orders, message)
+            list_orders = select_list_orders(message)
+            list_orders = str([x+y for x,y in zip(temp_str, list_orders)]).replace('[','').replace(']','')
+            update_orders(list_orders, message)
 
-    if state == "photo":
-        temp_str = message.text.split(",")
-        show_photos(temp_str, message)
-        set_state('null', message)
+        if state == "photo":
+            temp_str = message.text.split(",")
+            show_photos(temp_str, message)
+            set_state('null', message)
 
-    if state == "DFB":
-        temp_str = message.text.split(",")
-        temp_str = list(map(lambda x: x.replace(' ', '').split('*'), temp_str))
-        set_state('null', message)
-        temp_str = to_order_list(temp_str)
-        count = 0
-        list_orders = select_list_orders(message)
+        if state == "DFB":
+            temp_str = message.text.split(",")
+            temp_str = list(map(lambda x: x.replace(' ', '').split('*'), temp_str))
+            set_state('null', message)
+            temp_str = to_order_list(temp_str)
+            count = 0
+            list_orders = select_list_orders(message)
 
-        for i in range(0, config.COUNT_PRODUCTS-1):
-            if list_orders[i] - temp_str[i] >= 0:
-                count = count + temp_str[i]
-            else:
-                count = count + list_orders[i]
+            for i in range(0, config.COUNT_PRODUCTS-1):
+                if list_orders[i] - temp_str[i] >= 0:
+                    count = count + temp_str[i]
+                else:
+                    count = count + list_orders[i]
 
-        bot.send_message(message.chat.id, case_form_deleted(count))
-        list_orders = [(lambda x,y: max(x-y, 0))(x, y) for x,y in zip(list_orders, temp_str)]
-        update_orders(str(list_orders).replace('[','').replace(']',''), message)
+            bot.send_message(message.chat.id, case_form_deleted(count))
+            list_orders = [(lambda x,y: max(x-y, 0))(x, y) for x,y in zip(list_orders, temp_str)]
+            update_orders(str(list_orders).replace('[','').replace(']',''), message)
 
-        count = 0
+            count = 0
 
-        for i in list_orders:
-            count = count + i
+            for i in list_orders:
+                count = count + i
 
-        show_busket(message, count)
+            show_busket(message, count)
+    else:
+        bot.send_message(message.chat.id, "Введена неверная команда")
 
 def show_photos(photos_list, message):
     cursor.execute("SELECT image_id FROM products")
