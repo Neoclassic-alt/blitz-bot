@@ -6,9 +6,6 @@ import re
 
 token = config.TOKEN
 
-# тут у нас записывается прокси
-apihelper.proxy = config.PROXY
-
 bot = telebot.TeleBot(token)
 
 # количество товаров
